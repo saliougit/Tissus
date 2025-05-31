@@ -3,16 +3,18 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches:
-      - main  # ou master, selon votre branche principale
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2      - name: Deploy to GitHub Pages
+        uses: actions/checkout@v2
+
+      - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@4.1.4
         with:
-          branch: gh-pages  # La branche où le site sera déployé
-          folder: frontend  # Le dossier contenant les fichiers à déployer
-          clean: true  # Nettoie la branche gh-pages avant le déploiement
+          branch: gh-pages
+          folder: frontend
+          clean: true
