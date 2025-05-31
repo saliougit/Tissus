@@ -3,7 +3,7 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches:
-      - main
+      - main  # ou master, selon votre branche principale
 
 jobs:
   deploy:
@@ -15,6 +15,5 @@ jobs:
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@4.1.4
         with:
-          branch: gh-pages
-          folder: frontend
-          clean: true
+          branch: gh-pages  # La branche où le site sera déployé
+          folder: .  # Le dossier contenant les fichiers à déployer

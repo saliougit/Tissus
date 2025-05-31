@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">    <title>Suivi des Paiements - Tissus</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Charger jsPDF avant AutoTable -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Suivi des Paiements - Tissus</h1>
+        
+        <div class="stats">
+            <div class="stat-card">
+                <h3>Total Général</h3>
+                <p>Montant total: <span id="montantTotal">0</span> FCFA</p>
+                <p>Total tissus: <span id="totalTissus">0</span> mètres</p>
+            </div>
+            <div class="stat-card">
+                <h3>Paiements</h3>
+                <p>Montant payé: <span id="montantPaye">0</span> FCFA</p>
+                <p>Reste à payer: <span id="resteAPayer">0</span> FCFA</p>
+            </div>
+        </div>        
+        <div class="data-controls">
+            <button id="exportBtn" class="btn btn-primary">
+                <span>📤 Exporter les données</span>
+            </button>            <button id="importBtn" class="btn btn-secondary">
+                <span>📥 Importer des données</span>
+            </button>
+            <button id="pdfBtn" class="btn btn-success">
+                <span>📄 Générer PDF des paiements</span>
+            </button>
+            <input type="file" id="importFile" accept=".json" style="display: none;">
+        </div>
+        <div class="sections-container">
+            <div class="section-controls">
+                <select id="sectionFilter">
+                    <option value="all">Toutes les sections</option>
+                    <option value="4">4 mètres</option>
+                    <option value="5">5 mètres</option>
+                    <option value="6">6 mètres</option>
+                    <option value="8">8 mètres</option>
+                </select>
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Rechercher un nom..." class="search-input">
+                </div>
+            </div>
+            
+            <div class="tables-row">
+                <div class="table-container">
+                    <h2>Paiements validés</h2>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nom</th>
+                                <th>Longueur (m)</th>
+                                <th>Coût (FCFA)</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="clientsPayeList">
+                            <!-- Les clients qui ont payé -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="table-container">
+                    <h2>En attente de paiement</h2>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nom</th>
+                                <th>Longueur (m)</th>
+                                <th>Coût (FCFA)</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="clientsNonPayeList">
+                            <!-- Les clients qui n'ont pas payé -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
