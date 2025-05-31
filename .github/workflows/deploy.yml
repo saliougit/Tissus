@@ -10,10 +10,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Deploy to GitHub Pages
+        uses: actions/checkout@v2      - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@4.1.4
         with:
           branch: gh-pages  # La branche où le site sera déployé
-          folder: .  # Le dossier contenant les fichiers à déployer
+          folder: frontend  # Le dossier contenant les fichiers à déployer
+          clean: true  # Nettoie la branche gh-pages avant le déploiement
