@@ -3,23 +3,7 @@ const mysql = require('mysql2');
 const cors = require('cors');
 const app = express();
 
-// Configuration pour le déploiement
-const PORT = process.env.PORT || 3000;
-
-// Configuration MySQL avec les variables Railway
-const connection = mysql.createConnection({
-    host: process.env.MYSQLHOST || 'localhost',
-    user: process.env.MYSQLUSER || 'root',
-    password: process.env.MYSQLPASSWORD || 'P@sser123',
-    port: process.env.MYSQLPORT || 3306,
-    database: process.env.MYSQLDATABASE || 'tissus_db'
-});
-
-app.use(cors({
-    origin: ['https://saliougit.github.io', 'http://localhost:3000'],
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    credentials: true
-}));
+app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
 
@@ -34,13 +18,24 @@ app.get('/debug', (req, res) => {
     });
 });
 
-// Connexion à MySQL et initialisation de la base de données
+// Configuration de la connexion MySQL initiale (sans base de données)
+const connection = mysql.createConnection({
+    host: 'localhost',
+    user: 'root',
+    password: 'P@sser123'
+});
+
+// Connexion à MySQL
 connection.connect(error => {
     if (error) {
         console.error('Erreur de connexion à MySQL:', error);
         return;
     }
     console.log('Connecté à MySQL');
+    
+    // Créer la base de données si elle n'existe pas
+    connection.query(`CREATE DATABASE IF NOT EXISTS tissus_db`);
+    connection.query(`USE tissus_db`);
     
     // Créer la table clients si elle n'existe pas
     connection.query(`
@@ -100,6 +95,7 @@ app.put('/api/clients/:id/paiement', (req, res) => {
     );
 });
 
-app.listen(PORT, () => {
-    console.log(`Serveur démarré sur http://localhost:${PORT}`);
+const port = 3000;
+app.listen(port, () => {
+    console.log(`Serveur démarré sur http://localhost:${port}`);
 });

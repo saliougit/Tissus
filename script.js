@@ -1,5 +1,5 @@
 // Configuration de l'URL de l'API
-const API_URL = 'https://your-app-name.railway.app'; // À remplacer par l'URL fournie par Railway
+const API_URL = 'https://truns-backend.onrender.com'; // À remplacer par votre URL de déploiement
 
 // Attendre que jspdf soit chargé
 if (typeof window.jspdf === "undefined") {
