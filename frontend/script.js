@@ -53,13 +53,17 @@ async function calculerTotaux() {
     let totalMontant = 0;
     let totalTissus = 0;
     let montantPaye = 0;
+    let totalPersonnes = 0;
+    let nombrePersonnesPaye = 0;
 
     Object.values(donnees).forEach(section => {
         section.forEach(client => {
             totalMontant += parseFloat(client.cout);
             totalTissus += client.longueur;
+            totalPersonnes++;
             if (client.paye) {
                 montantPaye += parseFloat(client.cout);
+                nombrePersonnesPaye++;
             }
         });
     });
@@ -68,6 +72,9 @@ async function calculerTotaux() {
     document.getElementById('totalTissus').textContent = totalTissus;
     document.getElementById('montantPaye').textContent = montantPaye.toLocaleString();
     document.getElementById('resteAPayer').textContent = (totalMontant - montantPaye).toLocaleString();
+    document.getElementById('totalPersonnes').textContent = totalPersonnes;
+    document.getElementById('totalPersonnes2').textContent = totalPersonnes;
+    document.getElementById('personnesPaye').textContent = nombrePersonnesPaye;
 }
 
 // Fonction pour mettre à jour l'affichage de la liste

@@ -53,21 +53,26 @@ async function calculerTotaux() {
     let totalMontant = 0;
     let totalTissus = 0;
     let montantPaye = 0;
+    let totalPersonnes = 0;
+    let nombrePersonnesPaye = 0;
 
     Object.values(donnees).forEach(section => {
         section.forEach(client => {
             totalMontant += parseFloat(client.cout);
             totalTissus += client.longueur;
+            totalPersonnes++;
             if (client.paye) {
                 montantPaye += parseFloat(client.cout);
+                nombrePersonnesPaye++;
             }
         });
-    });
-
-    document.getElementById('montantTotal').textContent = totalMontant.toLocaleString();
+    });    document.getElementById('montantTotal').textContent = totalMontant.toLocaleString();
     document.getElementById('totalTissus').textContent = totalTissus;
     document.getElementById('montantPaye').textContent = montantPaye.toLocaleString();
     document.getElementById('resteAPayer').textContent = (totalMontant - montantPaye).toLocaleString();
+    document.getElementById('totalPersonnes').textContent = totalPersonnes;
+    document.getElementById('totalPersonnes2').textContent = totalPersonnes;
+    document.getElementById('personnesPaye').textContent = nombrePersonnesPaye;
 }
 
 // Fonction pour mettre à jour l'affichage de la liste
@@ -192,19 +197,25 @@ function formatMontant(montant) {
 }
 
 // Fonction pour générer le PDF des paiements
-function genererPDF() {
+async function genererPDF() {
     try {
-        const donnees = getDonnees();
+        const donnees = await getDonnees();
+        if (!donnees) {
+            alert('Erreur: Impossible de récupérer les données');
+            return;
+        }
+
+        // Créer un nouveau document PDF
         const doc = new jsPDF({
             orientation: 'portrait',
             unit: 'mm',
             format: 'a4'
         });
 
-        // Définir les marges
-        const marge = 20;
+        // Définir les dimensions et marges
         const largeurPage = doc.internal.pageSize.getWidth();
-        
+        const marge = 20;
+
         // En-tête avec logo ou titre stylisé
         doc.setFillColor(40, 84, 147);
         doc.rect(0, 0, largeurPage, 40, 'F');
@@ -225,7 +236,7 @@ function genererPDF() {
         });
         doc.text(`Date: ${date}`, marge, 50);
 
-        // Informations des totaux
+        // Calculer les totaux
         let totalMontantPaye = 0;
         let totalTissusPaye = 0;
         const paiementsValides = [];
@@ -233,14 +244,14 @@ function genererPDF() {
         // Collecter les paiements validés
         Object.entries(donnees).forEach(([section, clients]) => {
             clients.forEach(client => {
-                if (client.paye) {
+                if (client.paye === 1) {  // Vérifie si paye est égal à 1 (true dans MySQL)
                     paiementsValides.push([
                         client.nom,
                         `${client.longueur}m`,
-                        formatMontant(client.cout),
+                        formatMontant(parseFloat(client.cout)),
                         `${section}`
                     ]);
-                    totalMontantPaye += client.cout;
+                    totalMontantPaye += parseFloat(client.cout);
                     totalTissusPaye += client.longueur;
                 }
             });
@@ -254,43 +265,43 @@ function genererPDF() {
         doc.text(`Total payé: ${formatMontant(totalMontantPaye)}`, marge, 70);
         doc.text(`Total tissus payés: ${totalTissusPaye} mètres`, marge, 75);
 
-        // Tableau des paiements avec style amélioré
-        doc.autoTable({
-            startY: 90,
-            head: [['Nom', 'Longueur', 'Montant', 'Section']],
-            body: paiementsValides,
-            theme: 'grid',
-            styles: {
-                font: 'helvetica',
-                fontSize: 11,
-                cellPadding: 3,
-                lineColor: [220, 220, 220],
-                lineWidth: 0.1
-            },
-            headStyles: {
-                fillColor: [40, 84, 147],
-                textColor: [255, 255, 255],
-                fontSize: 12,
-                fontStyle: 'bold',
-                halign: 'left'
-            },
-            columnStyles: {
-                0: { cellWidth: 70 },  // Nom
-                1: { cellWidth: 35, halign: 'center' },  // Longueur
-                2: { cellWidth: 45, halign: 'right' },   // Montant
-                3: { cellWidth: 30, halign: 'center' }   // Section
-            },
-            alternateRowStyles: {
-                fillColor: [250, 250, 250]
-            },
-            margin: { top: marge, right: marge, bottom: marge, left: marge },
-            didDrawPage: function(data) {
-                // Ajouter un pied de page
-                let str = `Page ${doc.internal.getNumberOfPages()}`;
-                doc.setFontSize(10);
-                doc.text(str, data.settings.margin.left, doc.internal.pageSize.height - 10);
-            }
-        });
+        // Tableau des paiements
+        if (paiementsValides.length > 0) {
+            doc.autoTable({
+                startY: 90,
+                head: [['Nom', 'Longueur', 'Montant', 'Section']],
+                body: paiementsValides,
+                theme: 'grid',
+                styles: {
+                    font: 'helvetica',
+                    fontSize: 11,
+                    cellPadding: 3,
+                    lineColor: [220, 220, 220],
+                    lineWidth: 0.1
+                },
+                headStyles: {
+                    fillColor: [40, 84, 147],
+                    textColor: [255, 255, 255],
+                    fontSize: 12,
+                    fontStyle: 'bold',
+                    halign: 'left'
+                },
+                columnStyles: {
+                    0: { cellWidth: 70 },
+                    1: { cellWidth: 35, halign: 'center' },
+                    2: { cellWidth: 45, halign: 'right' },
+                    3: { cellWidth: 30, halign: 'center' }
+                },
+                alternateRowStyles: {
+                    fillColor: [250, 250, 250]
+                },
+                margin: { top: marge, right: marge, bottom: marge, left: marge }
+            });
+        } else {
+            doc.setFontSize(14);
+            doc.setTextColor(128, 128, 128);
+            doc.text('Aucun paiement validé à afficher', largeurPage / 2, 100, { align: 'center' });
+        }
 
         // Sauvegarder le PDF
         const fileName = `paiements-tissus-${date.replace(/\//g, '-')}.pdf`;
@@ -300,6 +311,27 @@ function genererPDF() {
         alert('Une erreur est survenue lors de la génération du PDF. Veuillez réessayer.');
     }
 }
+
+// Fonction pour rafraîchir automatiquement les données
+async function rafraichirDonnees() {
+    await afficherListe(document.getElementById('sectionFilter').value);
+    await calculerTotaux();
+    
+    // Mettre à jour l'heure de la dernière mise à jour
+    const maintenant = new Date();
+    const heureFormattee = maintenant.toLocaleTimeString('fr-FR', { 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        second: '2-digit' 
+    });
+    document.getElementById('lastUpdate').textContent = heureFormattee;
+}
+
+// Configuration du rafraîchissement automatique
+const INTERVALLE_RAFRAICHISSEMENT = 5000; // 5 secondes
+
+// Démarrer le rafraîchissement automatique
+let intervalId = setInterval(rafraichirDonnees, INTERVALLE_RAFRAICHISSEMENT);
 
 document.addEventListener('DOMContentLoaded', async () => {
     try {

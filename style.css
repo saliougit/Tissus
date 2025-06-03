@@ -232,6 +232,15 @@ table {
     width: 400px;
 }
 
+.last-update {
+    font-size: 0.8rem;
+    color: #666;
+    font-style: italic;
+    margin-top: 15px;
+    border-top: 1px solid #eee;
+    padding-top: 8px;
+}
+
 @media (max-width: 968px) {
     .container {
         padding: 15px;
