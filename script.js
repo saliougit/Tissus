@@ -77,40 +77,145 @@ async function calculerTotaux() {
 
 // Fonction pour mettre à jour l'affichage de la liste
 async function afficherListe(section = 'all', searchTerm = '') {
-    const donnees = await getDonnees();
-    if (!donnees) return;
+    try {
+        const donnees = await getDonnees();
+        if (!donnees) return;
+        
+        // Récupérer la liste des réceptions
+        const receptionResponse = await fetch('http://localhost:3000/api/receptions');
+        const receptions = await receptionResponse.json();
+        
+        const tbodyPaye = document.getElementById('clientsPayeList');
+        const tbodyNonPaye = document.getElementById('clientsNonPayeList');
+        tbodyPaye.innerHTML = '';
+        tbodyNonPaye.innerHTML = '';
 
-    const tbodyPaye = document.getElementById('clientsPayeList');
-    const tbodyNonPaye = document.getElementById('clientsNonPayeList');
-    tbodyPaye.innerHTML = '';
-    tbodyNonPaye.innerHTML = '';
-
-    Object.entries(donnees).forEach(([key, clients]) => {
-        if (section === 'all' || key === section) {
+        // Compter le nombre total de clients payés et non payés (qui n'ont pas reçu)
+        let totalPaye = 0;
+        let totalNonPaye = 0;
+        Object.values(donnees).forEach(clients => {
             clients.forEach(client => {
-                // Vérifier si le nom correspond à la recherche
-                if (searchTerm === '' || client.nom.toLowerCase().includes(searchTerm.toLowerCase())) {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td>${client.nom}</td>
-                        <td>${client.longueur}</td>
-                        <td>${parseFloat(client.cout).toLocaleString()}</td>
-                        <td>
-                            <button class="btn ${client.paye ? 'btn-annuler' : 'btn-payer'}"
-                                    onclick="togglePaiement('${key}', '${client.nom}')">
-                                ${client.paye ? 'Annuler' : 'Payer'}
-                            </button>
-                        </td>
-                    `;
-                    if (client.paye) {
-                        tbodyPaye.appendChild(tr);
-                    } else {
-                        tbodyNonPaye.appendChild(tr);
-                    }
+                const aRecu = receptions.some(r => r.client_id === client.id);
+                if (!aRecu) {
+                    if (client.paye) totalPaye++;
+                    else totalNonPaye++;
                 }
             });
+        });
+
+        // Afficher un message si toutes les sections sont vides
+        if (totalPaye === 0) {
+            tbodyPaye.innerHTML = `<tr><td colspan="4" class="empty-message">Pas encore de paiements validés</td></tr>`;
         }
-    });
+        if (totalNonPaye === 0) {
+            tbodyNonPaye.innerHTML = `<tr><td colspan="4" class="empty-message">Bravo ! Tous les paiements sont validés</td></tr>`;
+        }
+
+        Object.entries(donnees).forEach(([key, clients]) => {
+            if (section === 'all' || key === section) {
+                clients.forEach(client => {
+                    if (searchTerm === '' || client.nom.toLowerCase().includes(searchTerm.toLowerCase())) {
+                        // Vérifier si le client a déjà reçu son tissu
+                        const aRecu = receptions.some(r => r.client_id === client.id);
+                        
+                        // Ne pas afficher le client s'il a déjà reçu son tissu
+                        if (!aRecu) {
+                            const tr = document.createElement('tr');
+                            tr.innerHTML = `
+                                <td>${client.nom}</td>
+                                <td>${client.longueur}</td>
+                                <td>${parseFloat(client.cout).toLocaleString()}</td>
+                                <td>
+                                    <button class="btn ${client.paye ? 'btn-annuler' : 'btn-payer'}"
+                                            onclick="togglePaiement('${key}', '${client.nom}')">
+                                        ${client.paye ? 'Annuler' : 'Payer'}
+                                    </button>
+                                    ${client.paye ? `
+                                        <button class="btn btn-success btn-recu"
+                                            onclick="marquerCommeRecu('${key}', '${client.nom}', ${client.id})">
+                                            Reçu
+                                        </button>
+                                    ` : ''}
+                                </td>
+                            `;
+                            if (client.paye) {
+                                tbodyPaye.appendChild(tr);
+                            } else {
+                                tbodyNonPaye.appendChild(tr);
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    } catch (error) {
+        console.error('Erreur lors de l\'affichage de la liste:', error);
+    }
+}
+
+// Fonction pour afficher les réceptions
+async function afficherReceptions() {
+    try {
+        const response = await fetch('http://localhost:3000/api/receptions');
+        const receptions = await response.json();
+        
+        const tbody = document.getElementById('receptionsListeTissus');
+        tbody.innerHTML = '';
+
+        if (receptions.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="3" class="empty-message">Pas encore de réceptions enregistrées</td></tr>`;
+            return;
+        }
+
+        // Compteurs par section
+        let count4m = 0, count5m = 0, count6m = 0, count8m = 0;
+        
+        // Récupérer les totaux depuis getDonnees()
+        const donnees = await getDonnees();
+        const total4m = donnees['4m'] ? donnees['4m'].length : 0;
+        const total5m = donnees['5m'] ? donnees['5m'].length : 0;
+        const total6m = donnees['6m'] ? donnees['6m'].length : 0;
+        const total8m = donnees['8m'] ? donnees['8m'].length : 0;
+        
+        receptions.forEach(reception => {
+            const tr = document.createElement('tr');
+            const date = new Date(reception.date_reception).toLocaleString('fr-FR');
+            
+            tr.innerHTML = `
+                <td>${reception.nom}</td>
+                <td>${reception.section}</td>
+                <td>${date}</td>
+            `;
+            tbody.appendChild(tr);
+
+            // Incrémenter les compteurs
+            switch(reception.section) {
+                case '4m': count4m++; break;
+                case '5m': count5m++; break;
+                case '6m': count6m++; break;
+                case '8m': count8m++; break;
+            }
+        });
+
+        // Mettre à jour les compteurs et totaux
+        document.getElementById('count4m').textContent = count4m;
+        document.getElementById('count5m').textContent = count5m;
+        document.getElementById('count6m').textContent = count6m;
+        document.getElementById('count8m').textContent = count8m;
+          document.getElementById('total4m').textContent = total4m;
+        document.getElementById('total5m').textContent = total5m;
+        document.getElementById('total6m').textContent = total6m;
+        document.getElementById('total8m').textContent = total8m;
+
+        // Calculer et afficher les restants
+        document.getElementById('restant4m').textContent = total4m - count4m;
+        document.getElementById('restant5m').textContent = total5m - count5m;
+        document.getElementById('restant6m').textContent = total6m - count6m;
+        document.getElementById('restant8m').textContent = total8m - count8m;
+
+    } catch (error) {
+        console.error('Erreur lors de la récupération des réceptions:', error);
+    }
 }
 
 // Fonction pour basculer l'état de paiement
@@ -120,10 +225,45 @@ async function togglePaiement(section, nom) {
 
     const client = donnees[section].find(c => c.nom === nom);
     if (client) {
-        client.paye = !client.paye;
+        // Mettre à jour le statut de paiement sans demander de confirmation
+        const nouveauStatut = !client.paye;
+        client.paye = nouveauStatut;
         await saveDonnees(donnees);
-        await afficherListe(document.getElementById('sectionFilter').value);
-        await calculerTotaux();
+
+        // Rafraîchir les listes et les totaux
+        await Promise.all([
+            afficherListe(document.getElementById('sectionFilter').value),
+            afficherReceptions(),
+            calculerTotaux()
+        ]);
+    }
+}
+
+// Fonction pour marquer un tissu comme reçu
+async function marquerCommeRecu(section, nom, clientId) {
+    try {
+        // Demander confirmation
+        const confirmation = confirm(`Voulez-vous confirmer que ${nom} a reçu son tissu ?`);
+        if (!confirmation) return;
+
+        // Enregistrer la réception
+        await fetch('http://localhost:3000/api/receptions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ client_id: clientId })
+        });
+
+        // Rafraîchir l'affichage
+        await Promise.all([
+            afficherListe(document.getElementById('sectionFilter').value),
+            afficherReceptions(),
+            calculerTotaux()
+        ]);
+    } catch (error) {
+        console.error('Erreur lors de l\'enregistrement de la réception:', error);
+        alert('Une erreur est survenue lors de l\'enregistrement de la réception.');
     }
 }
 
@@ -338,6 +478,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Initialisation des données
         await afficherListe();
         await calculerTotaux();
+        await afficherReceptions();
         
         // Écouteurs pour les boutons principaux
         const exportBtn = document.getElementById('exportBtn');

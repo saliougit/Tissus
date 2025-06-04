@@ -48,6 +48,16 @@ connection.connect(error => {
             section VARCHAR(5) NOT NULL
         )
     `);
+
+    // Créer la table receptions_tissus si elle n'existe pas
+    connection.query(`
+        CREATE TABLE IF NOT EXISTS receptions_tissus (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            client_id INT NOT NULL,
+            date_reception DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (client_id) REFERENCES clients(id)
+        )
+    `);
 });
 
 // Routes API
@@ -91,6 +101,41 @@ app.put('/api/clients/:id/paiement', (req, res) => {
                 return;
             }
             res.json({ success: true });
+        }
+    );
+});
+
+// Route pour marquer un tissu comme reçu
+app.post('/api/receptions', (req, res) => {
+    const { client_id } = req.body;
+    connection.query(
+        'INSERT INTO receptions_tissus (client_id) VALUES (?)',
+        [client_id],
+        (error, results) => {
+            if (error) {
+                console.error('Erreur lors de l\'enregistrement de la réception:', error);
+                res.status(500).json({ error: 'Erreur serveur' });
+                return;
+            }
+            res.json({ id: results.insertId });
+        }
+    );
+});
+
+// Route pour obtenir la liste des réceptions
+app.get('/api/receptions', (req, res) => {
+    connection.query(
+        `SELECT r.id, r.client_id, r.date_reception, c.nom, c.section, c.longueur 
+         FROM receptions_tissus r 
+         INNER JOIN clients c ON r.client_id = c.id 
+         ORDER BY r.date_reception DESC`,
+        (error, results) => {
+            if (error) {
+                console.error('Erreur lors de la récupération des réceptions:', error);
+                res.status(500).json({ error: 'Erreur serveur' });
+                return;
+            }
+            res.json(results);
         }
     );
 });

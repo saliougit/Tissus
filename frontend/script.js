@@ -97,10 +97,9 @@ async function afficherListe(section = 'all', searchTerm = '') {
                         <td>${client.nom}</td>
                         <td>${client.longueur}</td>
                         <td>${parseFloat(client.cout).toLocaleString()}</td>
-                        <td>
-                            <button class="btn ${client.paye ? 'btn-annuler' : 'btn-payer'}"
-                                    onclick="togglePaiement('${key}', '${client.nom}')">
-                                ${client.paye ? 'Annuler' : 'Payer'}
+                        <td>                            <button class="btn ${client.paye ? 'btn-annuler' : 'btn-payer'}"
+                                    onclick="openConfirmationModal('${key}', '${client.nom}')">
+                                ${client.paye ? 'Annuler' : 'Marquer comme reçu'}
                             </button>
                         </td>
                     `;
@@ -307,6 +306,44 @@ function genererPDF() {
         alert('Une erreur est survenue lors de la génération du PDF. Veuillez réessayer.');
     }
 }
+
+// Gestion du modal
+const modal = document.getElementById('confirmationModal');
+const clientNameSpan = document.getElementById('clientName');
+const closeBtn = document.querySelector('.close');
+const confirmBtn = document.getElementById('confirmBtn');
+const cancelBtn = document.getElementById('cancelBtn');
+
+let clientToConfirm = null;
+
+// Fonction pour ouvrir le modal de confirmation
+function openConfirmationModal(section, nom) {
+    clientToConfirm = { section, nom };
+    clientNameSpan.textContent = nom;
+    modal.style.display = "block";
+}
+
+// Fermer le modal
+function closeModal() {
+    modal.style.display = "none";
+    clientToConfirm = null;
+}
+
+// Événements pour le modal
+closeBtn.onclick = closeModal;
+cancelBtn.onclick = closeModal;
+confirmBtn.onclick = async () => {
+    if (clientToConfirm) {
+        await togglePaiement(clientToConfirm.section, clientToConfirm.nom);
+        closeModal();
+    }
+};
+
+window.onclick = (event) => {
+    if (event.target == modal) {
+        closeModal();
+    }
+};
 
 document.addEventListener('DOMContentLoaded', async () => {
     try {

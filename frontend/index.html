@@ -12,6 +12,19 @@
     <div class="container">
         <h1>Suivi des Paiements - Tissus</h1>
         
+        <!-- Modal de confirmation -->
+        <div id="confirmationModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>Confirmation</h2>
+                <p>Confirmer la réception du tissu pour <span id="clientName"></span>?</p>
+                <div class="modal-buttons">
+                    <button id="confirmBtn" class="btn btn-success">Confirmer</button>
+                    <button id="cancelBtn" class="btn btn-secondary">Annuler</button>
+                </div>
+            </div>
+        </div>
+        
         <div class="stats">            <div class="stat-card">
                 <h3>Total Général</h3>
                 <p>Montant total: <span id="montantTotal">0</span> FCFA</p>
