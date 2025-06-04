@@ -75,7 +75,7 @@ async function calculerTotaux() {
     document.getElementById('personnesPaye').textContent = nombrePersonnesPaye;
 }
 
-// Fonction pour mettre à jour l'affichage de la liste
+// Fonction pour afficher la liste avec pagination
 async function afficherListe(section = 'all', searchTerm = '') {
     try {
         const donnees = await getDonnees();
@@ -90,70 +90,112 @@ async function afficherListe(section = 'all', searchTerm = '') {
         tbodyPaye.innerHTML = '';
         tbodyNonPaye.innerHTML = '';
 
-        // Compter le nombre total de clients payés et non payés (qui n'ont pas reçu)
-        let totalPaye = 0;
-        let totalNonPaye = 0;
-        Object.values(donnees).forEach(clients => {
-            clients.forEach(client => {
-                const aRecu = receptions.some(r => r.client_id === client.id);
-                if (!aRecu) {
-                    if (client.paye) totalPaye++;
-                    else totalNonPaye++;
-                }
-            });
-        });
-
-        // Afficher un message si toutes les sections sont vides
-        if (totalPaye === 0) {
-            tbodyPaye.innerHTML = `<tr><td colspan="4" class="empty-message">Pas encore de paiements validés</td></tr>`;
-        }
-        if (totalNonPaye === 0) {
-            tbodyNonPaye.innerHTML = `<tr><td colspan="4" class="empty-message">Bravo ! Tous les paiements sont validés</td></tr>`;
-        }
+        // Préparer les tableaux pour la pagination
+        const clientsPaye = [];
+        const clientsNonPaye = [];
 
         Object.entries(donnees).forEach(([key, clients]) => {
             if (section === 'all' || key === section) {
                 clients.forEach(client => {
                     if (searchTerm === '' || client.nom.toLowerCase().includes(searchTerm.toLowerCase())) {
-                        // Vérifier si le client a déjà reçu son tissu
                         const aRecu = receptions.some(r => r.client_id === client.id);
-                        
-                        // Ne pas afficher le client s'il a déjà reçu son tissu
                         if (!aRecu) {
-                            const tr = document.createElement('tr');
-                            tr.innerHTML = `
-                                <td>${client.nom}</td>
-                                <td>${client.longueur}</td>
-                                <td>${parseFloat(client.cout).toLocaleString()}</td>
-                                <td>
-                                    <button class="btn ${client.paye ? 'btn-annuler' : 'btn-payer'}"
-                                            onclick="togglePaiement('${key}', '${client.nom}')">
-                                        ${client.paye ? 'Annuler' : 'Payer'}
-                                    </button>
-                                    ${client.paye ? `
-                                        <button class="btn btn-success btn-recu"
-                                            onclick="marquerCommeRecu('${key}', '${client.nom}', ${client.id})">
-                                            Reçu
-                                        </button>
-                                    ` : ''}
-                                </td>
-                            `;
+                            const clientData = {
+                                ...client,
+                                section: key
+                            };
                             if (client.paye) {
-                                tbodyPaye.appendChild(tr);
+                                clientsPaye.push(clientData);
                             } else {
-                                tbodyNonPaye.appendChild(tr);
+                                clientsNonPaye.push(clientData);
                             }
                         }
                     }
                 });
             }
         });
+
+        // Récupérer les tailles de page
+        const paymentPageSize = parseInt(document.getElementById('paymentPageSize').value);
+        const nonPaymentPageSize = parseInt(document.getElementById('nonPaymentPageSize').value);
+
+        // Paginer les résultats
+        const payePageItems = paginate(clientsPaye, paymentPageSize, currentPaymentPage);
+        const nonPayePageItems = paginate(clientsNonPaye, nonPaymentPageSize, currentNonPaymentPage);
+
+        // Créer les boutons de pagination
+        createPaginationButtons(
+            clientsPaye.length,
+            paymentPageSize,
+            currentPaymentPage,
+            'paymentPagination',
+            (page) => {
+                currentPaymentPage = page;
+                afficherListe(section, searchTerm);
+            }
+        );
+
+        createPaginationButtons(
+            clientsNonPaye.length,
+            nonPaymentPageSize,
+            currentNonPaymentPage,
+            'nonPaymentPagination',
+            (page) => {
+                currentNonPaymentPage = page;
+                afficherListe(section, searchTerm);
+            }
+        );
+
+        // Afficher les messages si les sections sont vides
+        if (clientsPaye.length === 0) {
+            tbodyPaye.innerHTML = `<tr><td colspan="4" class="empty-message">Pas encore de paiements validés</td></tr>`;
+        }
+        if (clientsNonPaye.length === 0) {
+            tbodyNonPaye.innerHTML = `<tr><td colspan="4" class="empty-message">Bravo ! Tous les paiements sont validés</td></tr>`;
+        }
+
+        // Afficher les éléments de la page courante
+        payePageItems.forEach(client => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${client.nom}</td>
+                <td>${client.longueur}</td>
+                <td>${parseFloat(client.cout).toLocaleString()}</td>
+                <td>
+                    <button class="btn btn-annuler"
+                            onclick="togglePaiement('${client.section}', '${client.nom}')">
+                        Annuler
+                    </button>
+                    <button class="btn btn-success btn-recu"
+                            onclick="marquerCommeRecu('${client.section}', '${client.nom}', ${client.id})">
+                        Reçu
+                    </button>
+                </td>
+            `;
+            tbodyPaye.appendChild(tr);
+        });
+
+        nonPayePageItems.forEach(client => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${client.nom}</td>
+                <td>${client.longueur}</td>
+                <td>${parseFloat(client.cout).toLocaleString()}</td>
+                <td>
+                    <button class="btn btn-payer"
+                            onclick="togglePaiement('${client.section}', '${client.nom}')">
+                        Payer
+                    </button>
+                </td>
+            `;
+            tbodyNonPaye.appendChild(tr);
+        });
     } catch (error) {
         console.error('Erreur lors de l\'affichage de la liste:', error);
     }
 }
 
-// Fonction pour afficher les réceptions
+// Fonction pour afficher les réceptions avec pagination
 async function afficherReceptions() {
     try {
         const response = await fetch('http://localhost:3000/api/receptions');
@@ -176,8 +218,37 @@ async function afficherReceptions() {
         const total5m = donnees['5m'] ? donnees['5m'].length : 0;
         const total6m = donnees['6m'] ? donnees['6m'].length : 0;
         const total8m = donnees['8m'] ? donnees['8m'].length : 0;
+
+        // Récupérer la taille de page
+        const receptionPageSize = parseInt(document.getElementById('receptionPageSize').value);
         
+        // Paginer les résultats
+        const pageItems = paginate(receptions, receptionPageSize, currentReceptionPage);
+
+        // Créer les boutons de pagination
+        createPaginationButtons(
+            receptions.length,
+            receptionPageSize,
+            currentReceptionPage,
+            'receptionPagination',
+            (page) => {
+                currentReceptionPage = page;
+                afficherReceptions();
+            }
+        );
+
+        // Compter tous les éléments (pas seulement ceux de la page courante)
         receptions.forEach(reception => {
+            switch(reception.section) {
+                case '4m': count4m++; break;
+                case '5m': count5m++; break;
+                case '6m': count6m++; break;
+                case '8m': count8m++; break;
+            }
+        });
+
+        // Afficher les éléments de la page courante
+        pageItems.forEach(reception => {
             const tr = document.createElement('tr');
             const date = new Date(reception.date_reception).toLocaleString('fr-FR');
             
@@ -187,14 +258,6 @@ async function afficherReceptions() {
                 <td>${date}</td>
             `;
             tbody.appendChild(tr);
-
-            // Incrémenter les compteurs
-            switch(reception.section) {
-                case '4m': count4m++; break;
-                case '5m': count5m++; break;
-                case '6m': count6m++; break;
-                case '8m': count8m++; break;
-            }
         });
 
         // Mettre à jour les compteurs et totaux
@@ -202,7 +265,7 @@ async function afficherReceptions() {
         document.getElementById('count5m').textContent = count5m;
         document.getElementById('count6m').textContent = count6m;
         document.getElementById('count8m').textContent = count8m;
-          document.getElementById('total4m').textContent = total4m;
+        document.getElementById('total4m').textContent = total4m;
         document.getElementById('total5m').textContent = total5m;
         document.getElementById('total6m').textContent = total6m;
         document.getElementById('total8m').textContent = total8m;
@@ -473,6 +536,71 @@ const INTERVALLE_RAFRAICHISSEMENT = 5000; // 5 secondes
 // Démarrer le rafraîchissement automatique
 let intervalId = setInterval(rafraichirDonnees, INTERVALLE_RAFRAICHISSEMENT);
 
+// Variables de pagination
+let currentPaymentPage = 1;
+let currentNonPaymentPage = 1;
+let currentReceptionPage = 1;
+
+// Fonction utilitaire pour paginer un tableau
+function paginate(array, pageSize, pageNumber) {
+    return array.slice((pageNumber - 1) * pageSize, pageNumber * pageSize);
+}
+
+// Fonction pour créer les boutons de pagination
+function createPaginationButtons(totalItems, pageSize, currentPage, containerId, onPageChange) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    const totalPages = Math.ceil(totalItems / pageSize);
+    container.innerHTML = '';
+
+    // Bouton précédent
+    if (totalPages > 1) {
+        const prevButton = document.createElement('button');
+        prevButton.textContent = '«';
+        prevButton.disabled = currentPage === 1;
+        prevButton.onclick = () => onPageChange(currentPage - 1);
+        container.appendChild(prevButton);
+    }
+
+    // Boutons de page
+    for (let i = 1; i <= totalPages; i++) {
+        const button = document.createElement('button');
+        button.textContent = i;
+        button.classList.toggle('active', i === currentPage);
+        button.onclick = () => onPageChange(i);
+        container.appendChild(button);
+    }
+
+    // Bouton suivant
+    if (totalPages > 1) {
+        const nextButton = document.createElement('button');
+        nextButton.textContent = '»';
+        nextButton.disabled = currentPage === totalPages;
+        nextButton.onclick = () => onPageChange(currentPage + 1);
+        container.appendChild(nextButton);
+    }
+}
+
+// Fonction pour gérer les changements de taille de page
+function handlePageSizeChange(selectElement, type) {
+    const newSize = parseInt(selectElement.value);
+    switch (type) {
+        case 'payment':
+            currentPaymentPage = 1;
+            afficherListe(document.getElementById('sectionFilter').value, document.getElementById('searchInput').value);
+            break;
+        case 'nonPayment':
+            currentNonPaymentPage = 1;
+            afficherListe(document.getElementById('sectionFilter').value, document.getElementById('searchInput').value);
+            break;
+        case 'reception':
+            currentReceptionPage = 1;
+            afficherReceptions();
+            break;
+    }
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         // Initialisation des données
@@ -523,6 +651,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }, 300);
             });
         }
+        
+        // Écouteurs pour les sélecteurs de taille de page
+        document.getElementById('paymentPageSize').addEventListener('change', function() {
+            handlePageSizeChange(this, 'payment');
+        });
+
+        document.getElementById('nonPaymentPageSize').addEventListener('change', function() {
+            handlePageSizeChange(this, 'nonPayment');
+        });
+
+        document.getElementById('receptionPageSize').addEventListener('change', function() {
+            handlePageSizeChange(this, 'reception');
+        });
         
     } catch (error) {
         console.error('Erreur lors de l\'initialisation:', error);

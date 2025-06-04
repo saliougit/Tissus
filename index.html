@@ -53,6 +53,19 @@
             <div class="tables-row">
                 <div class="table-container">
                     <h2>Paiements validés</h2>
+                    
+                    <!-- Pagination controls for payments table -->
+                    <div class="pagination-controls">
+                        <select class="page-size" id="paymentPageSize">
+                            <option value="5">5 par page</option>
+                            <option value="10" selected>10 par page</option>
+                            <option value="15">15 par page</option>
+                            <option value="25">25 par page</option>
+                        </select>
+                        <div class="pagination-buttons" id="paymentPagination">
+                        </div>
+                    </div>
+
                     <table>
                         <thead>
                             <tr>
@@ -70,6 +83,19 @@
 
                 <div class="table-container">
                     <h2>En attente de paiement</h2>
+                    
+                    <!-- Pagination controls for non-paid clients table -->
+                    <div class="pagination-controls">
+                        <select class="page-size" id="nonPaymentPageSize">
+                            <option value="5">5 par page</option>
+                            <option value="10" selected>10 par page</option>
+                            <option value="15">15 par page</option>
+                            <option value="25">25 par page</option>
+                        </select>
+                        <div class="pagination-buttons" id="nonPaymentPagination">
+                        </div>
+                    </div>
+
                     <table>
                         <thead>
                             <tr>
@@ -88,6 +114,19 @@
 
             <div class="table-container mt-30">
                 <h2>Réceptions des tissus</h2>
+                
+                <!-- Pagination controls for receptions table -->
+                <div class="pagination-controls">
+                    <select class="page-size" id="receptionPageSize">
+                        <option value="5">5 par page</option>
+                        <option value="10" selected>10 par page</option>
+                        <option value="15">15 par page</option>
+                        <option value="25">25 par page</option>
+                    </select>
+                    <div class="pagination-buttons" id="receptionPagination">
+                    </div>
+                </div>
+
                 <table>
                     <thead>
                         <tr>
