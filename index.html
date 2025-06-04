@@ -2,7 +2,9 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">    <title>Suivi des Paiements - Tissus</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">    
+    <title>Suivi des Paiements - Tissus</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
     <!-- Charger jsPDF avant AutoTable -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -11,29 +13,39 @@
 <body>
     <div class="container">
         <h1>Suivi des Paiements - Tissus</h1>
-        
-        <div class="stats">            <div class="stat-card">
+          <div class="stats">
+            <div class="stat-card">
                 <h3>Total Général</h3>
-                <p>Montant total: <span id="montantTotal">0</span> FCFA</p>
-                <p>Total tissus: <span id="totalTissus">0</span> mètres</p>
-                <p>Total personnes: <span id="totalPersonnes">0</span></p>
-            </div>            <div class="stat-card">
-                <h3>Paiements</h3>
-                <p>Montant payé: <span id="montantPaye">0</span> FCFA</p>
-                <p>Reste à payer: <span id="resteAPayer">0</span> FCFA</p>
-                <p>Ont payé: <span id="personnesPaye">0</span>/<span id="totalPersonnes2">0</span></p>
-                <p class="last-update">Dernière mise à jour: <span id="lastUpdate">à l'instant</span></p>
+                <div class="stat-value">
+                    <p><i class="fas fa-money-bill"></i> Montant total: <span id="montantTotal">0</span> FCFA</p>
+                    <p><i class="fas fa-ruler"></i> Total tissus: <span id="totalTissus">0</span> mètres</p>
+                    <p><i class="fas fa-users"></i> Total personnes: <span id="totalPersonnes">0</span></p>
+                </div>
             </div>
-        </div>        
-        <div class="data-controls">
-            <button id="exportBtn" class="btn btn-primary">
+            <div class="stat-card">
+                <h3>Paiements</h3>
+                <div class="stat-value">
+                    <p><i class="fas fa-check-circle"></i> Montant payé: <span id="montantPaye">0</span> FCFA</p>
+                    <p><i class="fas fa-clock"></i> Reste à payer: <span id="resteAPayer">0</span> FCFA</p>
+                    <p><i class="fas fa-user-check"></i> Ont payé: <span id="personnesPaye">0</span>/<span id="totalPersonnes2">0</span></p>
+                </div>
+                <p class="last-update"><i class="fas fa-sync"></i> Dernière mise à jour: <span id="lastUpdate">à l'instant</span></p>
+            </div>
+        </div>
+        <div class="data-controls">            <button id="exportBtn" class="btn btn-primary">
                 <span>📤 Exporter les données</span>
             </button>            <button id="importBtn" class="btn btn-secondary">
                 <span>📥 Importer des données</span>
             </button>
-            <button id="pdfBtn" class="btn btn-success">
-                <span>📄 Générer PDF des paiements</span>
-            </button>
+            <div class="pdf-controls">
+                <button id="pdfBtn" class="btn btn-success">
+                    <span>📄 Générer PDF</span>
+                </button>
+                <select id="pdfType" class="pdf-select">
+                    <option value="paiements">État des Paiements</option>
+                    <option value="receptions">Liste des Réceptions</option>
+                </select>
+            </div>
             <input type="file" id="importFile" accept=".json" style="display: none;">
         </div>
         <div class="sections-container">

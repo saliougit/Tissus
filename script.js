@@ -515,6 +515,117 @@ async function genererPDF() {
     }
 }
 
+// Fonction pour générer le PDF des réceptions
+async function genererPDFReceptions() {
+    try {
+        const response = await fetch('http://localhost:3000/api/receptions');
+        const receptions = await response.json();
+        
+        if (receptions.length === 0) {
+            alert('Aucune réception à afficher');
+            return;
+        }
+
+        // Créer un nouveau document PDF
+        const doc = new jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4'
+        });
+
+        // Définir les dimensions et marges
+        const largeurPage = doc.internal.pageSize.getWidth();
+        const marge = 20;
+
+        // En-tête avec logo ou titre stylisé
+        doc.setFillColor(40, 84, 147);
+        doc.rect(0, 0, largeurPage, 40, 'F');
+        
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(24);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Liste des Réceptions - Tissus', largeurPage / 2, 25, { align: 'center' });
+        
+        // Date
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'normal');
+        const date = new Date().toLocaleDateString('fr-FR', { 
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+        doc.text(`Date: ${date}`, marge, 50);
+
+        // Préparer les données pour le tableau
+        const receptionsData = receptions.map(reception => [
+            reception.nom,
+            reception.section,
+            new Date(reception.date_reception).toLocaleString('fr-FR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            })
+        ]);
+
+        // Ajouter les statistiques par section
+        const stats = {
+            '4m': receptions.filter(r => r.section === '4m').length,
+            '5m': receptions.filter(r => r.section === '5m').length,
+            '6m': receptions.filter(r => r.section === '6m').length,
+            '8m': receptions.filter(r => r.section === '8m').length
+        };
+
+        doc.setFillColor(245, 245, 245);
+        doc.rect(marge - 2, 60, 170, 25, 'F');
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`Statistiques des réceptions:`, marge, 70);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`4m: ${stats['4m']} | 5m: ${stats['5m']} | 6m: ${stats['6m']} | 8m: ${stats['8m']}`, marge, 80);
+
+        // Tableau des réceptions
+        doc.autoTable({
+            startY: 90,
+            head: [['Nom', 'Section', 'Date de réception']],
+            body: receptionsData,
+            theme: 'grid',
+            styles: {
+                font: 'helvetica',
+                fontSize: 11,
+                cellPadding: 3,
+                lineColor: [220, 220, 220],
+                lineWidth: 0.1
+            },
+            headStyles: {
+                fillColor: [40, 84, 147],
+                textColor: [255, 255, 255],
+                fontSize: 12,
+                fontStyle: 'bold',
+                halign: 'left'
+            },
+            columnStyles: {
+                0: { cellWidth: 80 },
+                1: { cellWidth: 30, halign: 'center' },
+                2: { cellWidth: 60, halign: 'center' }
+            },
+            alternateRowStyles: {
+                fillColor: [250, 250, 250]
+            },
+            margin: { top: marge, right: marge, bottom: marge, left: marge }
+        });
+
+        // Sauvegarder le PDF
+        const fileName = `receptions-tissus-${date.replace(/\//g, '-')}.pdf`;
+        doc.save(fileName);
+    } catch (error) {
+        console.error('Erreur lors de la génération du PDF des réceptions:', error);
+        alert('Une erreur est survenue lors de la génération du PDF. Veuillez réessayer.');
+    }
+}
+
 // Fonction pour rafraîchir automatiquement les données
 async function rafraichirDonnees() {
     await afficherListe(document.getElementById('sectionFilter').value);
@@ -632,8 +743,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             });
         }
-        
-        if (pdfBtn) pdfBtn.addEventListener('click', genererPDF);
+          if (pdfBtn) {
+            pdfBtn.addEventListener('click', () => {
+                const pdfType = document.getElementById('pdfType').value;
+                if (pdfType === 'paiements') {
+                    genererPDF();
+                } else if (pdfType === 'receptions') {
+                    genererPDFReceptions();
+                }
+            });
+        }
         
         if (sectionFilter) {
             sectionFilter.addEventListener('change', (e) => {
